@@ -48,7 +48,7 @@ public class SAESTool extends JFrame {
         
         add(new JLabel("密文:"));
         ciphertextField = new JTextField();
-        ciphertextField.setEditable(true);
+        ciphertextField.setEditable(false);
         add(ciphertextField);
         
         add(new JLabel("第一轮中间结果:"));
@@ -129,63 +129,91 @@ public class SAESTool extends JFrame {
     }
     
     // 加密函数，返回数组[密文, 第一轮中间结果]
-    private int[] encrypt(int plaintext, int key) {
-        // 密钥扩展
-        int[] w = keyExpansion(key);
-        System.out.println("密钥扩展结果: w0=" + String.format("%02X", w[0]) + ", w1=" + String.format("%02X", w[1]) + ", w2=" + String.format("%02X", w[2]) + ", w3=" + String.format("%02X", w[3]) + ", w4=" + String.format("%02X", w[4]) + ", w5=" + String.format("%02X", w[5]));
-        // 初始轮密钥加
-        int state = plaintext ^ ((w[0] << 8) | w[1]);
-         System.out.println("初始轮密钥加后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        // 第一轮
-        state = subNibbles(state);
-        System.out.println("第一轮半字节替代后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = shiftRows(state);
-        System.out.println("第一轮行移位后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = mixColumns(state);
-        System.out.println("第一轮列混淆后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state ^= ((w[2] << 8) | w[3]);
-        
-        // 保存第一轮中间结果
-        int intermediateResult = state;
-        
-        // 第二轮
-        state = subNibbles(state);
-        System.out.println("第二轮半字节替代后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = shiftRows(state);
-        System.out.println("第二轮行移位后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state ^= ((w[4] << 8) | w[5]);
-        System.out.println("第二轮轮密钥加后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        
-        return new int[]{state, intermediateResult};
-    }
+  private int[] encrypt(int plaintext, int key) {
+    System.out.println("\n=== 加密开始 ===");
+    System.out.println("明文: " + String.format("%04X", plaintext) + " (二进制: " + String.format("%16s", Integer.toBinaryString(plaintext)).replace(' ', '0') + ")");
+    System.out.println("密钥: " + String.format("%04X", key) + " (二进制: " + String.format("%16s", Integer.toBinaryString(key)).replace(' ', '0') + ")");
     
-    // 解密函数
-    private int decrypt(int ciphertext, int key) {
-        // 密钥扩展
-        int[] w = keyExpansion(key);
-        
-        // 初始轮密钥加
-        int state = ciphertext ^ ((w[4] << 8) | w[5]);
-        
-        // 第一轮逆操作
-        state = invShiftRows(state);
-        System.out.println("第一轮逆行移位后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = invSubNibbles(state);
-        System.out.println("第一轮逆半字节替代后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state ^= ((w[2] << 8) | w[3]);
-        System.out.println("第一轮逆轮密钥加后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = invMixColumns(state);
-        
-        // 第二轮逆操作
-        state = invShiftRows(state);
-        System.out.println("第二轮逆行移位后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state = invSubNibbles(state);
-        System.out.println("第二轮逆半字节替代后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        state ^= ((w[0] << 8) | w[1]);
-        System.out.println("第二轮逆轮密钥加后状态 (二进制): " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + " (十六进制): " + String.format("%04X", state));
-        
-        return state;
-    }
+    // 密钥扩展
+    int[] w = keyExpansion(key);
+    
+    // 初始轮密钥加
+    int state = plaintext ^ ((w[0] << 8) | w[1]);
+    System.out.println("初始轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    
+    // 第一轮
+    System.out.println("\n--- 第一轮开始 ---");
+    state = subNibbles(state);
+    System.out.println("半字节替代后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = shiftRows(state);
+    System.out.println("行移位后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = mixColumns(state);
+    System.out.println("列混淆后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state ^= ((w[2] << 8) | w[3]);
+    System.out.println("轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("--- 第一轮结束 ---\n");
+    
+    // 保存第一轮中间结果
+    int intermediateResult = state;
+    
+    // 第二轮
+    System.out.println("--- 第二轮开始 ---");
+    state = subNibbles(state);
+    System.out.println("半字节替代后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = shiftRows(state);
+    System.out.println("行移位后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state ^= ((w[4] << 8) | w[5]);
+    System.out.println("轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("--- 第二轮结束 ---\n");
+    
+    System.out.println("密文: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("第一轮中间结果: " + String.format("%04X", intermediateResult));
+    System.out.println("=== 加密结束 ===");
+    
+    return new int[]{state, intermediateResult};
+}
+
+// 修改解密函数，添加每一步输出
+private int decrypt(int ciphertext, int key) {
+    System.out.println("\n=== 解密开始 ===");
+    System.out.println("密文: " + String.format("%04X", ciphertext) + " (二进制: " + String.format("%16s", Integer.toBinaryString(ciphertext)).replace(' ', '0') + ")");
+    System.out.println("密钥: " + String.format("%04X", key) + " (二进制: " + String.format("%16s", Integer.toBinaryString(key)).replace(' ', '0') + ")");
+    
+    // 密钥扩展
+    int[] w = keyExpansion(key);
+    
+    // 初始轮密钥加
+    int state = ciphertext ^ ((w[4] << 8) | w[5]);
+    System.out.println("初始轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    
+    // 第一轮逆操作
+    System.out.println("\n--- 第一轮逆操作开始 ---");
+    state = invShiftRows(state);
+    System.out.println("逆行移位后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = invSubNibbles(state);
+    System.out.println("逆半字节替代后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state ^= ((w[2] << 8) | w[3]);
+    System.out.println("逆轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = invMixColumns(state);
+    System.out.println("逆列混淆后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("--- 第一轮逆操作结束 ---\n");
+    
+    // 第二轮逆操作
+    System.out.println("--- 第二轮逆操作开始 ---");
+    state = invShiftRows(state);
+    System.out.println("逆行移位后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state = invSubNibbles(state);
+    System.out.println("逆半字节替代后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    state ^= ((w[0] << 8) | w[1]);
+    System.out.println("逆轮密钥加后状态: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("--- 第二轮逆操作结束 ---\n");
+    
+    System.out.println("解密得到的明文: " + String.format("%04X", state) + " (二进制: " + String.format("%16s", Integer.toBinaryString(state)).replace(' ', '0') + ")");
+    System.out.println("=== 解密结束 ===");
+    
+    return state;
+}
+
     
     // 密钥扩展
     private int[] keyExpansion(int key) {
@@ -249,13 +277,16 @@ public class SAESTool extends JFrame {
     }
     
     // 行移位
+    // 标准的S-AES行移位实现
     private int shiftRows(int state) {
-        int nibble1 = (state >> 8) & 0xF;
-        int nibble3 = (state >> 4) & 0xF;
-        
-        // 交换第二行的两个半字节
-        state = (state & 0xF0F0) | (nibble3 << 8) | nibble1;
-        return state;
+    // 提取四个半字节
+    int s00 = (state >> 12) & 0xF;
+    int s01 = (state >> 8) & 0xF;
+    int s10 = (state >> 4) & 0xF;
+    int s11 = state & 0xF;
+    
+    // 第二行左移一个位置（交换s10和s11）
+    return (s00 << 12) | (s01 << 8) | (s11 << 4) | s10;
     }
     
     // 逆行移位
@@ -265,7 +296,7 @@ public class SAESTool extends JFrame {
     }
     
     // 列混淆
-   private int mixColumns(int state) {
+  private int mixColumns(int state) {
     // 将状态表示为2x2矩阵
     // s00 s01
     // s10 s11
@@ -284,18 +315,20 @@ public class SAESTool extends JFrame {
     return (s00_prime << 12) | (s01_prime << 8) | (s10_prime << 4) | s11_prime;
 }
     // 逆列混淆
-   private int invMixColumns(int state) {
-    int[] columns = new int[2];
-    columns[0] = (state >> 8) & 0xFF;
-    columns[1] = state & 0xFF;
+private int invMixColumns(int state) {
+    // 将状态表示为2x2矩阵
+    int s00 = (state >> 12) & 0xF;
+    int s01 = (state >> 8) & 0xF;
+    int s10 = (state >> 4) & 0xF;
+    int s11 = state & 0xF;
     
-    int[] newColumns = new int[2];
-    newColumns[0] = (gmul(columns[0] >> 4, 0x9) ^ gmul(columns[0] & 0xF, 0x2)) << 4 | 
-                    (gmul(columns[1] >> 4, 0x2) ^ gmul(columns[1] & 0xF, 0x9));
-    newColumns[1] = (gmul(columns[0] >> 4, 0x2) ^ gmul(columns[0] & 0xF, 0x9)) << 4 | 
-                    (gmul(columns[1] >> 4, 0x9) ^ gmul(columns[1] & 0xF, 0x2));
+    // 应用逆列混淆公式
+    int s00_prime = gmul(s00, 0x9) ^ gmul(s10, 0x2);  // 使用逆列混淆矩阵
+    int s10_prime = gmul(s00, 0x2) ^ gmul(s10, 0x9);
+    int s01_prime = gmul(s01, 0x9) ^ gmul(s11, 0x2);
+    int s11_prime = gmul(s01, 0x2) ^ gmul(s11, 0x9);
     
-    return (newColumns[0] << 8) | newColumns[1];
+    return (s00_prime << 12) | (s01_prime << 8) | (s10_prime << 4) | s11_prime;
 }
     // 半字节旋转
     private int rotNib(int value) {
